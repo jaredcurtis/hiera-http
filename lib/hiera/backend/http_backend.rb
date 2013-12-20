@@ -100,6 +100,11 @@ class Hiera
           # endpoint URL is a YAML document and return keypart that matched our
           # lookup key
           self.yaml_handler(key,answer)
+        when 'foreman'
+          # If FOREMAN is specified as the output format, assume the out of the
+          # endpoint URL is a YAML document and return keypart that matched our
+          # lookup key
+          self.foreman_handler(key,answer)
         else
           answer
         end
@@ -107,7 +112,7 @@ class Hiera
 
       # Handlers
       # Here we define specific handlers to parse the output of the http request
-      # and return a value.  Currently we support YAML and JSON
+      # and return a value.  Currently we support YAML, JSON, and Foreman
       #
       def json_handler(key,answer)
         require 'rubygems'
@@ -118,6 +123,18 @@ class Hiera
       def yaml_handler(answer)
         require 'yaml'
         YAML.parse(answer)[key]
+      end
+
+      def foreman_handler(key,answer)
+        require 'yaml'
+        parse = YAML.load(answer)
+        if parse.has_key?(key)
+          Hiera.debug("Looking for #{key} in global scope")
+          parse[key]
+        elsif parse.has_key?('parameters')
+          Hiera.debug("Looking for #{key} in parameters scope")
+          parse['parameters'][key]
+        end
       end
 
     end
